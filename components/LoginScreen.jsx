@@ -1,71 +1,140 @@
+// LoginScreen.jsx
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useWarmUpBrowser } from "../hooks/useWarmUPBrowser";
-import * as WebBrowser from 'expo-web-browser'
-import { useOAuth } from '@clerk/clerk-expo'
+import * as WebBrowser from "expo-web-browser";
+import { useOAuth, useSignIn, useUser } from "@clerk/clerk-expo"; // Import useUser
+import { db } from "../../SwipeNShop/configs/FirebaseConfig"; // Import Firestore
+import { doc, setDoc } from "firebase/firestore"; // Import Firestore functions
+import Icon from "react-native-vector-icons/FontAwesome5";
+import SignUpScreen from "./SignUpScreen"; // Import SignUpScreen
 
-WebBrowser.maybeCompleteAuthSession()
+
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
+  const [isSignUp, setIsSignUp] = useState(false); // State to toggle between Login and SignUp
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-//   const handleLogin = () => {
-//     if (email.trim() === "" || password.trim() === "") {
-//       Alert.alert("Error", "Please fill in both fields.");
-//       return;
-//     }
-//     // Handle login logic here
-//     Alert.alert("Success", `Logged in with email: ${email}`);
-//   };
 
-  useWarmUpBrowser()
+  // Clerk hooks
+  const { signIn, setActive } = useSignIn(); // Use the useSignIn hook for email/password login
+  const { startOAuthFlow } = useOAuth({ strategy: "oauth_google" });
+  const { user, isLoaded } = useUser(); // Use the useUser hook to get the current user
 
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' })
-
-  const onPress = React.useCallback(async () => {
+  // Handle Google OAuth login
+  const onPressGoogle = React.useCallback(async () => {
     try {
-      const { createdSessionId, signIn, signUp, setActive } = await startOAuthFlow()
-
-      // If sign in was successful, set the active session
+      const { createdSessionId } = await startOAuthFlow();
       if (createdSessionId) {
-        setActive({ session: createdSessionId })
+        await setActive({ session: createdSessionId });
+
+        // Wait for the user object to load
+        if (!isLoaded) {
+          console.log("User data is still loading...");
+          return;
+        }
+         console.log(signIn);
+        // Fetch the current user's details
+        const userData = {
+          userId: createdSessionId,
+          email: signIn?.emailAddress || null, // Extract email address
+          firstName: signIn?.firstName || null, // Extract first name
+          lastName: signIn?.lastName || null, // Extract last name
+        };
+
+        // Add user data to Firestore
+        await addUserToFirestore(userData);
+
+        console.log("User added to Firestore:", userData);
       } else {
-        // Use signIn or signUp returned from startOAuthFlow
-        // for next steps, such as MFA
+        console.log("Sign-in or sign-up required.");
       }
     } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
-      console.error("OAuth error", err)
+      console.error("OAuth error", err);
     }
-  }, [])
+  }, [user, isLoaded]);
+
+  // Handle email/password login
+  const onLoginPress = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+
+    try {
+      // Attempt to sign in with email and password
+      const completeSignIn = await signIn.create({
+        identifier: email,
+        password,
+      });
+
+      // If successful, set the session active
+      if (completeSignIn.status === "complete") {
+        await setActive({ session: completeSignIn.createdSessionId });
+        Alert.alert("Success", "You have successfully logged in!");
+      } else {
+        throw new Error("Sign in not completed");
+      }
+    } catch (err) {
+      //console.error("Error during login:", err);
+      Alert.alert("Login Failed", err.errors[0]?.message || "Invalid email or password.");
+    }
+  };
+
+  // Add user data to Firestore
+  const addUserToFirestore = async (userData) => {
+    try {
+      const userRef = doc(db, "Profile_Google_SignIn", userData.userId);
+      await setDoc(userRef, userData);
+      console.log("User data added to Firestore successfully!");
+    } catch (error) {
+      console.error("Error adding user to Firestore:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#aaa"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <TouchableOpacity style={styles.button} onPress={onPress}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => Alert.alert("Forgot Password", "Redirect to forgot password flow.")}>
-        <Text style={styles.link}>Forgot Password?</Text>
-      </TouchableOpacity>
+      {isSignUp ? (
+        // Render SignUpScreen when isSignUp is true
+        <SignUpScreen setIsSignUp={setIsSignUp} />
+      ) : (
+        // Render LoginScreen when isSignUp is false
+        <>
+          <Text style={styles.title}>Login</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#aaa"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#aaa"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity style={styles.button} onPress={onLoginPress}>
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => setIsSignUp(true)}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonGoogle} onPress={onPressGoogle}>
+            <Icon name="google" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={{ marginTop: 10 }}>Sign up with Google</Text>
+          <TouchableOpacity onPress={() => Alert.alert("Forgot Password", "Redirect to forgot password flow.")}>
+            <Text style={styles.link}>Forgot Password?</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -96,7 +165,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "black",
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -110,9 +179,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   link: {
-    color: "#007BFF",
+    color: "black",
     fontSize: 16,
     marginTop: 10,
     textDecorationLine: "underline",
+  },
+  buttonGoogle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#db4437",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

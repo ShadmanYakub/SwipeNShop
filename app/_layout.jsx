@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-expo';
 import { Text } from "react-native";
 import LoginScreen from "../components/LoginScreen";
+import SignUpScreen from "../components/SignUpScreen";
 import { TokenCache } from '@clerk/clerk-expo/dist/cache'
 import * as SecureStore from "expo-secure-store";
 

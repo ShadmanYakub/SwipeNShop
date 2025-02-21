@@ -76,9 +76,16 @@ export default function BrandsSlider() {
                                 source={{ uri: brandsList[currentIndex].imageUrl }}
                                 style={styles.image}
                             />
-                            <Text style={{fontFamily: 'outfit-bold', marginBottom: 60, marginTop: 10}}>
+                            <View style={styles.rowContainer}>
+                            <Text style={{ fontFamily: 'outfit-bold', marginBottom: 60, marginTop: 10 }}>
                                 {brandsList[currentIndex].name}
                             </Text>
+                            <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 60, marginTop: 10 }}>
+                                {brandsList[currentIndex].product_id}
+                            </Text>
+                            </View>
+                            
+                            
                             
                             <View style={styles.iconContainer}>
                                 <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>
@@ -178,4 +185,8 @@ const styles = StyleSheet.create({
         fontSize: 16, // adjust size as needed
         // Add more styles as required
     },
+    rowContainer: {
+        flexDirection: 'row', // Aligns children horizontally
+        alignItems: 'center', // Vertically centers the items
+      },
 });

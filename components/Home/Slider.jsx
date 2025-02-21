@@ -74,6 +74,14 @@ export default function Slider() {
                                 source={{ uri: sliderList[currentIndex].imageUrl }}
                                 style={styles.image}
                             />
+                            <View style={styles.rowContainer}>
+                            <Text style={{ fontFamily: 'outfit-bold', marginBottom: 10, marginTop: 5 }}>
+                                {sliderList[currentIndex].brand_name}
+                            </Text>
+                            <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 10, marginTop: 5 }}>
+                                {sliderList[currentIndex].product_name}
+                            </Text>
+                            </View>
                             <View style={styles.iconContainer}>
                             <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>
                                 <MaterialIcons name="arrow-left" size={15} color="white" />
@@ -171,4 +179,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 5,
     },
+    rowContainer: {
+        flexDirection: 'row', // Aligns children horizontally
+        alignItems: 'center', // Vertically centers the items
+      },
 });
