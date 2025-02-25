@@ -1,36 +1,45 @@
-import { View, StyleSheet } from 'react-native';
-import React, { useEffect } from 'react';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import Header from '../../components/Home/Header';
 import Category from '../../components/Home/Category';
-import ProductsSlider from '../../components/ProductsSlider';
+import ProductSlider from '../../components/ProductsSlider'; // Reusable productSlider component
 import BottomTab from '../../components/Home/BottomTab';
 import { useNavigation } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router'; // Import useLocalSearchParams
 
 const Products = () => {
-    const navigation = useNavigation();
-    useEffect(()=>{
-        navigation.setOptions({
-            headerShown: true,
-        })
-    }, [])
-    
+  const navigation = useNavigation();
+  const { productName } = useLocalSearchParams(); // Extract query parameters
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      title: productName || "Products", // Dynamically set the header title
+    });
+    setLoading(false);
+  }, [productName]);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#0000ff" />;
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Header/>
-      
+      <Header />
+
       {/* Category Buttons */}
       <Category />
-      
+
       {/* Slider */}
       <View style={styles.sliderContainer}>
-        <ProductsSlider />
+        {/* Pass the product name as a prop to the generic productSlider */}
+        <ProductSlider productName={productName} />
       </View>
 
-      <BottomTab/>
-      
-
-     
+      {/* Bottom Tab */}
+      <BottomTab />
     </View>
   );
 };

@@ -1,33 +1,43 @@
 import { View, Text, Image, Dimensions, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../configs/FirebaseConfig';
-import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler'; // Import State here
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-export default function ProductsSlider() {
+export default function ProductSlider({ productName }) {
     const navigation = useNavigation(); // Get navigation object
-    const [productsList, setProductsList] = useState([]);
+    const [productList, setproductList] = useState([]); // List of filtered items
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const translateX = useSharedValue(0); // Shared value for animated translation
 
     useEffect(() => {
-        GetProductsList();
-    }, []);
+        GetproductList();
+    }, [productName]); // Re-fetch data if the productName changes
 
-    const GetProductsList = async () => {
-        setProductsList([]);
+    // Fetch items based on the provided productName
+    const GetproductList = async () => {
+        setproductList([]);
         setLoading(true);
-        const q = query(collection(db, 'Products'));
-        const querySnapshot = await getDocs(q);
-        const images = querySnapshot.docs.map(doc => doc.data());
-        setProductsList(images);
-        setLoading(false);
+
+        try {
+            // Query Firestore to filter items where `name` matches the provided productName
+            const q = query(collection(db, 'Products'), where('type', '==', productName));
+            const querySnapshot = await getDocs(q);
+
+            // Extract data from the query results
+            const productItems = querySnapshot.docs.map(doc => doc.data());
+            setproductList(productItems);
+        } catch (error) {
+            console.error("Error fetching product data:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const onSwipe = (event) => {
@@ -38,15 +48,14 @@ export default function ProductsSlider() {
     const onHandlerStateChange = (event) => {
         if (event.nativeEvent.oldState === State.ACTIVE) {
             const { translationX } = event.nativeEvent;
-            if (translationX > 100) {
-                const randomIndex = Math.floor(Math.random() * productsList.length);
-                console.log(randomIndex);
-                runOnJS(setCurrentIndex)(randomIndex);
-            } else if (translationX < -100) {
-                const randomIndex = Math.floor(Math.random() * productsList.length);
+
+            // Handle swipe gestures
+            if (translationX > 100 || translationX < -100) {
+                const randomIndex = Math.floor(Math.random() * productList.length);
                 console.log(randomIndex);
                 runOnJS(setCurrentIndex)(randomIndex);
             }
+
             // Reset position
             translateX.value = withTiming(0);
         }
@@ -59,83 +68,58 @@ export default function ProductsSlider() {
     });
 
     return (
-        <View style = {{
-            backgroundColor: 'white',
-        }}>
+        <View style={{ backgroundColor: 'white' }}>
             <GestureHandlerRootView style={styles.container}>
                 {loading ? (
                     <ActivityIndicator size="large" color="#0000ff" />
-                ) : productsList.length > 0 ? (
+                ) : productList.length > 0 ? (
                     <PanGestureHandler
                         onGestureEvent={onSwipe}
                         onHandlerStateChange={onHandlerStateChange}
                     >
                         <Animated.View style={[styles.imageContainer, animatedStyle]}>
-                            
+                            {/* Display the current product item */}
                             <Image
-                                source={{ uri: productsList[currentIndex].imageUrl }}
+                                source={{ uri: productList[currentIndex]?.imageUrl }}
                                 style={styles.image}
                             />
-                            <Text style={{fontFamily: 'outfit-bold', marginBottom: 60, marginTop: 10}}>
-                                {productsList[currentIndex].type}
-                            </Text>
-                            
+                            <View style={styles.rowContainer}>
+                                <Text style={{ fontFamily: 'outfit-bold', marginBottom: 60, marginTop: 10 }}>
+                                    {productList[currentIndex]?.name}
+                                </Text>
+                                <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 60, marginTop: 10 }}>
+                                    {productList[currentIndex]?.product_id}
+                                </Text>
+                            </View>
+
                             <View style={styles.iconContainer}>
                                 <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>
                                     <MaterialIcons name="arrow-left" size={15} color="white" />
                                     <MaterialIcons name="delete" size={24} color="white" />
                                 </TouchableOpacity>
-                               
-                                <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>
 
+                                <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>
                                     <MaterialIcons name="favorite" size={24} color="white" />
                                     <MaterialIcons name="arrow-right" size={15} color="white" />
                                 </TouchableOpacity>
                             </View>
-                            
                         </Animated.View>
                     </PanGestureHandler>
                 ) : (
-                    <Text style={styles.loadingText}>No images available.</Text>
+                    <Text style={styles.loadingText}>No items available for {productName}.</Text>
                 )}
             </GestureHandlerRootView>
         </View>
-        
     );
 }
 
+// Reuse the same styles as productsSlider
 const styles = StyleSheet.create({
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-        marginTop: 5,
-        paddingRight: 100,
-        marginRight: 20
-    },
-    button: {
-        backgroundColor: 'black',
-        borderRadius: 25,
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: 5,
-    },
-    buttonText: {
-        color: 'white',
-        marginLeft: 5,
-    },
     container: {
         paddingTop: 150,
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    title: {
-        fontFamily: 'outfit-bold',
-        fontSize: 20,
-        padding: 20,
     },
     imageContainer: {
         paddingTop: 70,
@@ -154,11 +138,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: 'gray',
     },
-    swipeIndicator: {
-        fontSize: 16,
-        color: 'green',
-        marginTop: 10,
-    },
     iconContainer: {
         position: 'absolute',
         bottom: 20,
@@ -166,16 +145,15 @@ const styles = StyleSheet.create({
         right: 20,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 200
+        marginBottom: 200,
     },
     iconButton: {
         backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
         borderRadius: 20,
         padding: 5,
     },
-    productName: {
-        color: 'white', // or any color you prefer
-        fontSize: 16, // adjust size as needed
-        // Add more styles as required
+    rowContainer: {
+        flexDirection: 'row', // Aligns children horizontally
+        alignItems: 'center', // Vertically centers the items
     },
 });

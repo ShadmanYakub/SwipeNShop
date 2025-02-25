@@ -26,7 +26,7 @@ export default function LoginScreen() {
   // Handle Google OAuth login
   const onPressGoogle = React.useCallback(async () => {
     try {
-      const { createdSessionId } = await startOAuthFlow();
+      const { createdSessionId, setActive} = await startOAuthFlow();
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
 
@@ -35,13 +35,13 @@ export default function LoginScreen() {
           console.log("User data is still loading...");
           return;
         }
-         console.log(signIn);
+         console.log(user);
         // Fetch the current user's details
         const userData = {
-          userId: createdSessionId,
-          email: signIn?.emailAddress || null, // Extract email address
-          firstName: signIn?.firstName || null, // Extract first name
-          lastName: signIn?.lastName || null, // Extract last name
+          userId: createdSessionId, // Use the user's ID from Clerk
+          email: user?.emailAddresses[0]?.emailAddress || null, // Extract primary email address
+          firstName: user?.firstName || null, // Extract first name
+          lastName: user?.lastName || null, // Extract last name
         };
 
         // Add user data to Firestore
