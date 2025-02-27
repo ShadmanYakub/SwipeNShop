@@ -12,8 +12,8 @@ const BottomTab = ({ navigation }) => {
         <Ionicons name="home" size={24} color={Colors.PRIMARY} />
         <Text style={styles.label}>Home</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.tab} onPress={() => router.push('/(tabs)/explore')}>
-        <Ionicons name="search" size={24} color={Colors.PRIMARY} />
+      <TouchableOpacity style={styles.tab} onPress={() => router.push('/(tabs)/cart')}>
+        <Ionicons name="cart" size={24} color={Colors.PRIMARY} />
         <Text style={styles.label}>Explore</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.tab} onPress={() => router.push('/(tabs)/profile')}>
@@ -44,8 +44,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    color: 'white',
+    color: Colors.PRIMARY,
     fontSize: 12,
+    paddingVertical: 5,
   },
 });
 

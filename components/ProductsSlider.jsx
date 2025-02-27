@@ -173,10 +173,10 @@ export default function ProductSlider({ productName }) {
             />
             <View style={styles.rowContainer}>
               <Text style={{ fontFamily: 'outfit-bold', marginBottom: 60, marginTop: 10 }}>
-                {productList[currentIndex]?.name}
+                {productList[currentIndex]?.brand_id}
               </Text>
               <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 60, marginTop: 10 }}>
-                {productList[currentIndex]?.product_id}
+                {productList[currentIndex]?.type}
               </Text>
             </View>
             <View style={styles.iconContainer}>

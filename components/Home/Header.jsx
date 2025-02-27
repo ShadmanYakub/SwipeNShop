@@ -42,7 +42,7 @@ const Header = () => {
                     fontSize: 19,
                     fontFamily: 'outfit-Bold',
                     color: 'black'
-                }}>{user?.fullName}</Text>
+                }}>{user?.unsafeMetadata?.firstName || user?.firstName || 'User'}</Text>
                 </View>
         </View>
         <View style = {{

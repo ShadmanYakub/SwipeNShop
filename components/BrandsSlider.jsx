@@ -176,7 +176,7 @@ export default function BrandSlider({ brandName }) {
                 {brandList[currentIndex]?.name}
               </Text>
               <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 60, marginTop: 10 }}>
-                {brandList[currentIndex]?.brand_id}
+                {brandList[currentIndex]?.product_name}
               </Text>
             </View>
             <View style={styles.iconContainer}>

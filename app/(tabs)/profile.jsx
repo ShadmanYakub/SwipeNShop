@@ -37,7 +37,7 @@ export default function ProfileScreen() {
       {/* User Information */}
       <View style={styles.infoContainer}>
         <Text style={styles.label}>Name:</Text>
-        <Text style={styles.value}>{user?.firstName || ''} {user?.lastName || ''}</Text>
+        <Text style={styles.value}>{user?.unsafeMetadata?.firstName || user?.firstName || 'User'} {user?.unsafeMetadata?.lastName || user?.lastName || ''}</Text>
 
         <Text style={styles.label}>Email:</Text>
         <Text style={styles.value}>{user?.emailAddresses?.[0]?.emailAddress || 'N/A'}</Text>

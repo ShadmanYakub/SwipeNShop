@@ -15,11 +15,11 @@ const TabLayout = () => {
           tabBarIcon: ({color})=><Ionicons name="home" size={24} color={color} />
         }}
         />
-        <Tabs.Screen name = 'explore'
+        <Tabs.Screen name = 'cart'
          options={{
-          tabBarLabel: 'Explore',
+          tabBarLabel: 'Cart',
           tabBarActiveTintColor :Colors.PRIMARY,
-          tabBarIcon: ({color})=><Ionicons name="search" size={24} color={color} />
+          tabBarIcon: ({color})=><Ionicons name="cart" size={24} color={color} />
         }}
         />
         <Tabs.Screen name = 'profile'
@@ -27,6 +27,13 @@ const TabLayout = () => {
           tabBarLabel: 'Profile',
           tabBarActiveTintColor :Colors.PRIMARY,
           tabBarIcon: ({color})=><Ionicons name="people-circle" size={24} color={color} />
+        }}
+        />
+        <Tabs.Screen name = 'search'
+         options={{
+          tabBarLabel: 'Search',
+          tabBarActiveTintColor :Colors.PRIMARY,
+          tabBarIcon: ({color})=><Ionicons name="search" size={24} color={color} />
         }}
         />
         
