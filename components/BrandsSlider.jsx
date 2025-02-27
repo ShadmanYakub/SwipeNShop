@@ -1,4 +1,4 @@
-import { View, Text, Image, Dimensions, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Image, Dimensions, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, addDoc } from 'firebase/firestore'; // Import `addDoc` for Firestore writes
 import { db } from '../configs/FirebaseConfig';
@@ -16,7 +16,8 @@ export default function BrandSlider({ brandName }) {
   const [brandList, setBrandList] = useState([]); // List of filtered items
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const translateX = useSharedValue(0); // Shared value for animated translation
+  const translateX = useSharedValue(0); // Shared value for horizontal swipe detection
+  const translateY = useSharedValue(0); // Shared value for vertical swipe detection
 
   // Fetch items based on the provided brandName
   useEffect(() => {
@@ -80,9 +81,93 @@ export default function BrandSlider({ brandName }) {
 
     // Reset position
     translateX.value = withTiming(0);
+    translateY.value = withTiming(0);
   };
 
-  // Function to record swipe in Firestore
+  // Handle swipe up gesture
+  const handleSwipeUp = () => {
+    const currentBrand = brandList[currentIndex];
+    if (!currentBrand) return;
+
+    // Check if the brand is out of stock
+    if (currentBrand.stock === 0) {
+      Alert.alert("Out of Stock", "This brand is currently sold out.");
+      return;
+    }
+
+    // Check if sizes are available
+    if (!currentBrand.size || currentBrand.size.length === 0) {
+      Alert.alert("No Sizes Available", "This brand does not have any available sizes.");
+      return;
+    }
+
+    // Prompt for quantity selection
+    Alert.prompt(
+      "Select Quantity",
+      "Enter the number of items you want from this brand:",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "OK",
+          onPress: (quantity) => {
+            const parsedQuantity = parseInt(quantity, 10);
+
+            if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+              Alert.alert("Invalid Quantity", "Please enter a valid quantity.");
+              return;
+            }
+
+            if (parsedQuantity > currentBrand.stock) {
+              Alert.alert("Not Enough Stock", `Only ${currentBrand.stock} items are available.`);
+              return;
+            }
+
+            // Prompt for size selection
+            Alert.alert(
+              "Select Size",
+              "Available Sizes: " + currentBrand.size.join(", "),
+              currentBrand.size.map((size) => ({
+                text: size,
+                onPress: () => addToCart(currentBrand, parsedQuantity, size),
+              })),
+              { cancelable: true }
+            );
+          },
+        },
+      ],
+      "plain-text"
+    );
+  };
+
+  // Add brand to Cart collection
+  const addToCart = async (brand, quantity, size) => {
+    try {
+      const primaryEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId)?.emailAddress || 'Unknown';
+      const userId = user.id;
+
+      await addDoc(collection(db, 'Cart'), {
+        brand_id: brand.id,
+        image: brand.imageUrl,
+        brand_name: brand.name,
+        price: brand.price,
+        user_id: userId,
+        email: primaryEmail,
+        quantity: quantity,
+        size: size,
+        timestamp: new Date(),
+      });
+
+      Alert.alert("Added to Cart", `${brand.name} (${size}) added to your cart.`);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      Alert.alert("Error", "Failed to add the brand to your cart.");
+    }
+  };
+
+  // Record swipe in Firestore
   const recordSwipe = async (direction, brand) => {
     try {
       // Validate user session
@@ -106,7 +191,7 @@ export default function BrandSlider({ brandName }) {
         email: primaryEmail,
         user_id: userId,
         brand_name: brand.name,
-        product_name: brand.product_id,
+        product_name: brand.product_name,
         brand_id: brand.id, // Use the Firestore-generated ID here
         timestamp: new Date(), // Optional: Add a timestamp for when the swipe occurred
       });
@@ -118,31 +203,45 @@ export default function BrandSlider({ brandName }) {
   };
 
   const onSwipe = (event) => {
-    const { translationX } = event.nativeEvent;
-    translateX.value = translationX; // Update the translateX value based on the translation
+    const { translationX, translationY } = event.nativeEvent;
+    translateX.value = translationX; // Update the translateX value for horizontal swipes
+    translateY.value = translationY; // Update the translateY value for vertical swipes
   };
 
   const onHandlerStateChange = (event) => {
     if (event.nativeEvent.oldState === State.ACTIVE) {
-      const { translationX } = event.nativeEvent;
+      const { translationX, translationY } = event.nativeEvent;
 
       // Determine swipe direction
-      if (translationX > 100) {
-        // Swiped right
-        runOnJS(handleSwipe)('right');
-      } else if (translationX < -100) {
-        // Swiped left
-        runOnJS(handleSwipe)('left');
+      if (Math.abs(translationX) > Math.abs(translationY)) {
+        // Horizontal swipe (swipe right or left)
+        if (translationX > 100) {
+          // Swiped right
+          runOnJS(handleSwipe)('right');
+        } else if (translationX < -100) {
+          // Swiped left
+          runOnJS(handleSwipe)('left');
+        }
+      } else {
+        // Vertical swipe (swipe up)
+        if (translationY < -100) {
+          // Swiped up
+          runOnJS(handleSwipeUp)();
+        }
       }
 
       // Reset position
       translateX.value = withTiming(0);
+      translateY.value = withTiming(0);
     }
   };
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateX: translateX.value }],
+      transform: [
+        { translateX: translateX.value }, // Horizontal animation
+        { translateY: translateY.value }, // Vertical animation
+      ],
     };
   });
 
