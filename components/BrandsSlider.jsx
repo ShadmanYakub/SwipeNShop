@@ -277,6 +277,9 @@ export default function BrandSlider({ brandName }) {
               <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 60, marginTop: 10 }}>
                 {brandList[currentIndex]?.product_name}
               </Text>
+              <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 60, marginTop: 10 }}>
+                , Price: HKD {brandList[currentIndex]?.price}
+              </Text>
             </View>
             <View style={styles.iconContainer}>
               <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>

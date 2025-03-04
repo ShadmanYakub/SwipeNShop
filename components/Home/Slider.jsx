@@ -278,6 +278,9 @@ export default function Slider() {
               <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 10, marginTop: 5 }}>
                 {sliderList[currentIndex]?.product_name}
               </Text>
+              <Text style={{ fontFamily: 'outfit-bold', marginLeft: 5, marginBottom: 10, marginTop: 5 }}>
+                , Price: HKD {sliderList[currentIndex]?.price}
+              </Text>
             </View>
             <View style={styles.iconContainer}>
               <TouchableOpacity style={[styles.iconButton, { flexDirection: 'row', alignItems: 'center' }]}>

@@ -1,6 +1,6 @@
 import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore'; // Import Firestore utilities
+import { collection, getDocs, query, where, doc, deleteDoc } from 'firebase/firestore'; // Import Firestore utilities
 import { db } from '../../configs/FirebaseConfig';
 import Header from '../../components/Home/Header';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -31,7 +31,7 @@ const Cart = () => {
         const querySnapshot = await getDocs(q);
 
         // Extract both the document data and Firestore-generated ID
-        const cartData = querySnapshot.docs.map(doc => ({
+        const cartData = querySnapshot.docs.map((doc) => ({
           id: doc.id, // Firestore-generated ID
           ...doc.data(), // Document data
         }));
@@ -39,9 +39,8 @@ const Cart = () => {
         console.log("Fetched cart items:", cartData);
 
         // Calculate total price
-        const totalPrice = cartData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const totalPrice = cartData.reduce((sum, item) => sum + item.price * item.quantity, 0);
         setTotalPrice(totalPrice);
-
         setCartItems(cartData);
       } catch (error) {
         console.error("Error fetching cart data:", error);
@@ -52,6 +51,29 @@ const Cart = () => {
 
     fetchCartData();
   }, [user]);
+
+  // Handle removing an item from the cart
+  const handleRemoveItem = async (itemId) => {
+    try {
+      // Delete the item from Firestore
+      const itemRef = doc(db, 'Cart', itemId);
+      await deleteDoc(itemRef);
+
+      // Remove the item from local state
+      const updatedCartItems = cartItems.filter((item) => item.id !== itemId);
+
+      // Recalculate the total price
+      const newTotalPrice = updatedCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      setCartItems(updatedCartItems);
+      setTotalPrice(newTotalPrice);
+
+      Alert.alert('Success', 'Item removed from cart.');
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+      Alert.alert('Error', 'Failed to remove item from cart.');
+    }
+  };
 
   // Handle payment simulation
   const handlePayment = () => {
@@ -83,6 +105,13 @@ const Cart = () => {
         <Text style={styles.productInfo}>Size: {item.size}</Text>
         <Text style={styles.productPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
       </View>
+      {/* Remove Button */}
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => handleRemoveItem(item.id)}
+      >
+        <MaterialIcons name="remove-circle" size={24} color="#ff4d4d" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -191,6 +220,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#007bff',
+  },
+  removeButton: {
+    marginLeft: 10,
   },
   totalPriceContainer: {
     position: 'absolute',
